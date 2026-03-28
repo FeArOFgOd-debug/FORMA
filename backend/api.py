@@ -1,0 +1,259 @@
+from __future__ import annotations
+
+import json
+
+from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from pydantic import BaseModel, Field
+
+from typing import List, Optional
+
+from openai import OpenAI
+
+from backend.config import OPENAI_API_KEY
+from backend.convex_client import create_job, get_analysis, get_job, list_analyses
+from backend.pipeline.orchestrator import run_pipeline
+from backend.pipeline.pdf_export import generate_pdf
+from backend.pipeline.revenue_simulation import run_simulation
+
+app = FastAPI(
+    title="Business Idea Analyzer",
+    description="Analyze any business idea with web research, social sentiment, and AI-powered insights.",
+    version="0.3.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class AnalyzeRequest(BaseModel):
+    idea: str = Field(
+        ...,
+        min_length=3,
+        max_length=500,
+        examples=["An app for tracking freelance invoices"],
+    )
+
+
+async def _run_pipeline_bg(idea: str, job_id: str) -> None:
+    """Background wrapper — exceptions are caught by the orchestrator and sent to Convex."""
+    try:
+        await run_pipeline(idea, job_id=job_id)
+    except Exception:
+        pass
+
+
+@app.post("/analyze")
+async def analyze(req: AnalyzeRequest, bg: BackgroundTasks):
+    try:
+        job_id = create_job(req.idea)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
+
+    bg.add_task(_run_pipeline_bg, req.idea, job_id)
+    return {"job_id": job_id}
+
+
+@app.get("/jobs/{job_id}")
+async def job_status(job_id: str):
+    try:
+        job = get_job(job_id)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    status = job.get("status", "running")
+    resp = {
+        "status": status,
+        "progress": job.get("progress", 0),
+        "label": job.get("stage_label", ""),
+    }
+
+    if status == "completed":
+        resp["status"] = "complete"
+        try:
+            record = get_analysis(job_id)
+            if record and record.get("result"):
+                result = record["result"]
+                if isinstance(result, str):
+                    try:
+                        result = json.loads(result)
+                    except json.JSONDecodeError:
+                        pass
+                resp["result"] = result
+        except Exception:
+            pass
+
+    if status == "failed":
+        resp["error"] = job.get("error", "Unknown error")
+
+    return resp
+
+
+@app.get("/history")
+async def history():
+    try:
+        items = list_analyses()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
+
+    for item in items:
+        if isinstance(item.get("result"), str):
+            try:
+                item["result"] = json.loads(item["result"])
+            except json.JSONDecodeError:
+                pass
+    return items
+
+
+@app.get("/history/{job_id}")
+async def history_detail(job_id: str):
+    try:
+        record = get_analysis(job_id)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
+    if record is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    if isinstance(record.get("result"), str):
+        try:
+            record["result"] = json.loads(record["result"])
+        except json.JSONDecodeError:
+            pass
+    return record
+
+
+@app.get("/export/{job_id}/pdf")
+async def export_pdf(job_id: str):
+    try:
+        record = get_analysis(job_id)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
+    if record is None:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    result_data = record.get("result", record)
+    if isinstance(result_data, str):
+        try:
+            result_data = json.loads(result_data)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail="Corrupt analysis data")
+
+    pdf_bytes = generate_pdf(result_data)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=forma_{job_id}.pdf"},
+    )
+
+
+class SimulationRequest(BaseModel):
+    """User-tweakable revenue simulation parameters.
+
+    All fields are optional — omitted fields fall back to the AI-generated
+    defaults stored in the analysis (when job_id is provided) or to
+    conservative built-in defaults.
+    """
+    job_id: Optional[str] = Field(None, description="Load AI-generated defaults from this analysis")
+    price_per_user_monthly: Optional[float] = Field(None, gt=0, description="Monthly price per user (USD)")
+    initial_users: Optional[int] = Field(None, gt=0, description="Paying users in month 1")
+    monthly_growth_rate: Optional[float] = Field(None, ge=0, le=1, description="MoM growth rate (0-1)")
+    churn_rate: Optional[float] = Field(None, ge=0, lt=1, description="Monthly churn rate (0-1)")
+    fixed_monthly_cost: Optional[float] = Field(None, ge=0, description="Fixed monthly operating cost (USD)")
+    variable_cost_per_user: Optional[float] = Field(None, ge=0, description="Variable cost per user (USD)")
+    projection_months: Optional[int] = Field(None, ge=1, le=120, description="How many months to project")
+
+
+@app.post("/simulate/revenue")
+async def simulate_revenue(req: SimulationRequest):
+    """Run a revenue simulation with tweakable parameters.
+
+    If job_id is provided, loads AI-generated defaults from the stored
+    analysis and merges user overrides on top. Otherwise uses built-in
+    conservative defaults.
+    """
+    base_params: dict = {}
+
+    if req.job_id:
+        try:
+            record = get_analysis(req.job_id)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
+        if record is None:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+
+        result_data = record.get("result", record)
+        if isinstance(result_data, str):
+            try:
+                result_data = json.loads(result_data)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=500, detail="Corrupt analysis data")
+
+        rev_sim = result_data.get("revenue_simulation", {})
+        base_params = rev_sim.get("defaults", {})
+
+    overrides = req.model_dump(exclude={"job_id"}, exclude_none=True)
+    params = {**base_params, **overrides}
+    simulation = run_simulation(params)
+    return simulation
+
+
+class ChatMessage(BaseModel):
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str
+
+
+class ChatRequest(BaseModel):
+    job_id: str
+    message: str = Field(..., min_length=1, max_length=2000)
+    history: List[ChatMessage] = Field(default_factory=list)
+
+
+@app.post("/chat")
+async def chat(req: ChatRequest):
+    try:
+        record = get_analysis(req.job_id)
+    except Exception:
+        record = None
+
+    report_json = ""
+    if record and record.get("result"):
+        result_data = record["result"]
+        if isinstance(result_data, str):
+            report_json = result_data
+        else:
+            report_json = json.dumps(result_data, indent=2)
+
+    system_prompt = (
+        "You are Forma AI, a sharp startup advisor. The user has just "
+        "received a business-idea analysis report. Use it as context to "
+        "answer follow-up questions with specificity and nuance.\n\n"
+        f"FULL REPORT:\n{report_json}\n\n"
+        "Be concise, practical, and data-driven. If the report doesn't "
+        "cover something, say so honestly."
+    )
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for m in req.history[-20:]:
+        messages.append({"role": m.role, "content": m.content})
+    messages.append({"role": "user", "content": req.message})
+
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        temperature=0.5,
+        max_tokens=800,
+    )
+    return {"reply": response.choices[0].message.content}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}

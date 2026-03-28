@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forma — Research before you build</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="index.css" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+  <canvas id="dot-canvas"></canvas>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-logo">
+      <svg width="28" height="28" viewBox="0 0 20 20">
+        <rect width="20" height="20" rx="3" fill="#0e0e0c"/>
+        <rect x="3" y="3" width="14" height="14" rx="2" fill="#f2f0eb"/>
+        <rect x="7" y="7" width="8" height="8" rx="1.5" fill="#0e0e0c"/>
+      </svg>
+      <span class="nav-wordmark">FORMA</span>
+    </div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#analyse" class="nav-cta">Try it free →</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+  <canvas id="aurora-canvas"></canvas>
+    <div class="hero-left">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        AI-powered market research
+      </div>
+      <h1 class="hero-headline">
+        <span id="tagline-text"></span><span class="cursor"></span>
+      </h1>
+      <p class="hero-sub">
+        Forma scours the web, Reddit, and market data in real time — then hands you a brutally honest research report in under 30 seconds.
+      </p>
+      <div class="hero-actions">
+        <a href="#analyse" class="btn-primary">Start analysing →</a>
+        <a href="#how" class="btn-ghost">See how it works</a>
+      </div>
+      <div class="powered-by">
+       <div class="powered-by">
+  <span class="powered-label">Powered by</span>
+  <div class="logoloop" id="logoloop">
+    <div class="logoloop__track" id="logoloop-track"></div>
+  </div>
+</div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="report-card" id="demo-card">
+        <div class="card-header">
+          <div class="card-dots">
+            <span style="background:#ff5f57"></span>
+            <span style="background:#febc2e"></span>
+            <span style="background:#28c840"></span>
+          </div>
+          <span class="card-label">FORMA REPORT</span>
+        </div>
+        <div class="card-body">
+          <div class="card-score-row">
+            <div class="card-score-circle">
+              <span class="card-score-num">8</span>
+              <span class="card-score-denom">/10</span>
+            </div>
+            <div>
+              <p class="card-idea-name">Food delivery · Srinagar</p>
+              <span class="card-verdict promising">Promising</span>
+            </div>
+          </div>
+          <div class="card-divider"></div>
+          <div class="card-row">
+            <p class="card-row-label">Market</p>
+            <p class="card-row-val">Underserved local market with strong mobile adoption and no dominant player.</p>
+          </div>
+          <div class="card-row">
+            <p class="card-row-label">Opportunity</p>
+            <p class="card-row-val">First-mover advantage in tier-2 Kashmir region.</p>
+          </div>
+          <div class="card-row">
+            <p class="card-row-label">Risk</p>
+            <p class="card-row-val">Seasonal demand dips and logistics in winter months.</p>
+          </div>
+          <div class="card-divider"></div>
+          <div class="card-comp-row">
+            <p class="card-row-label">Competitors</p>
+            <div class="card-comp-pills">
+              <span>Swiggy</span><span>Zomato</span><span>Local tiffins</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ANALYSE -->
+  <section class="section analyse-section" id="analyse">
+  <canvas id="waves-canvas"></canvas>
+    <div class="section-inner">
+      <p class="eyebrow">Try it now</p>
+      <h2 class="section-title">Enter your idea</h2>
+      <div class="search-wrap">
+        <input type="text" id="idea-input" class="search-bar" placeholder="Describe your startup idea…" />
+        <button class="search-btn" onclick="startAnalysis()">Analyse</button>
+      </div>
+      <div class="examples">
+        <span class="examples-label">Try:</span>
+        <button class="pill" onclick="setIdea('food delivery app for Srinagar')">food delivery for Srinagar</button>
+        <button class="pill" onclick="setIdea('AI tutor for Kashmir students')">AI tutor for Kashmir</button>
+        <button class="pill" onclick="setIdea('cursor hackathon tool')">cursor hackathon tool</button>
+      </div>
+
+      <!-- Status -->
+      <div class="status-bar" id="status-bar">
+        <p class="status-msg" id="status-msg"></p>
+        <div class="analysis-progress">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="progress-pct">0%</span>
+            <span id="progress-eta">estimating…</span>
+            <span id="progress-elapsed">0s elapsed</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step" id="step-1">Searching web</div>
+          <div class="step" id="step-2">Scraping Reddit</div>
+          <div class="step" id="step-3">AI analysis</div>
+          <div class="step" id="step-4">Report ready</div>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <section class="report" id="report">
+        <div class="report-layout">
+          <div class="report-main">
+            <div class="score-row">
+              <div class="score-circle">
+                <span id="score-num">8</span><span class="score-denom">/10</span>
+              </div>
+              <div>
+                <h2 id="report-title">Your idea</h2>
+                <span class="verdict-badge" id="verdict-badge">promising</span>
+              </div>
+            </div>
+
+            <div class="radar-card" id="radar-card">
+              <p class="box-label">Idea scorecard</p>
+              <canvas id="radar-canvas" width="340" height="300"></canvas>
+              <div class="radar-legend" id="radar-legend"></div>
+            </div>
+
+            <div class="info-box"><p class="box-label">Executive summary</p><p id="exec-summary">—</p></div>
+
+            <div class="two-col">
+              <div class="info-box"><p class="box-label">Market size</p><p id="market-summary">—</p></div>
+              <div class="info-box"><p class="box-label">Target audience</p><p id="target-audience">—</p></div>
+            </div>
+
+            <div class="two-col">
+              <div class="info-box"><p class="box-label">Biggest opportunity</p><p id="opportunity">—</p></div>
+              <div class="info-box"><p class="box-label">Biggest risk</p><p id="risk">—</p></div>
+            </div>
+
+            <div class="swot-grid" id="swot-grid">
+              <div class="swot-box swot-s"><p class="box-label">Strengths</p><ul id="swot-strengths"></ul></div>
+              <div class="swot-box swot-w"><p class="box-label">Weaknesses</p><ul id="swot-weaknesses"></ul></div>
+              <div class="swot-box swot-o"><p class="box-label">Opportunities</p><ul id="swot-opportunities"></ul></div>
+              <div class="swot-box swot-t"><p class="box-label">Threats</p><ul id="swot-threats"></ul></div>
+            </div>
+
+            <div class="competitors-card"><p class="box-label">Top competitors</p><div class="badge-row" id="comp-list"></div></div>
+
+            <div class="sentiment-panel" id="sentiment-panel">
+              <p class="box-label">Public sentiment</p>
+              <p class="sentiment-summary" id="sentiment-summary">—</p>
+              <div class="sentiment-gauge-row">
+                <div class="sentiment-gauge">
+                  <div class="gauge-label">Overall score</div>
+                  <div class="gauge-track">
+                    <div class="gauge-fill" id="sentiment-gauge-fill"></div>
+                  </div>
+                  <div class="gauge-value" id="sentiment-gauge-val">—</div>
+                </div>
+                <div class="platform-bars">
+                  <div class="platform-bar">
+                    <span class="platform-icon">Reddit</span>
+                    <span class="platform-badge" id="reddit-sentiment">—</span>
+                  </div>
+                  <div class="platform-bar">
+                    <span class="platform-icon">Twitter</span>
+                    <span class="platform-badge" id="twitter-sentiment">—</span>
+                  </div>
+                </div>
+              </div>
+              <div class="two-col" style="margin-top:14px">
+                <div class="sentiment-list-box sentiment-positives">
+                  <p class="sent-list-label">Key positives</p>
+                  <ul id="sent-positives"></ul>
+                </div>
+                <div class="sentiment-list-box sentiment-concerns">
+                  <p class="sent-list-label">Key concerns</p>
+                  <ul id="sent-concerns"></ul>
+                </div>
+              </div>
+              <div class="notable-comments" id="notable-comments"></div>
+            </div>
+
+            <div class="two-col">
+              <div class="info-box"><p class="box-label">Revenue model</p><p id="revenue-model">—</p></div>
+              <div class="info-box"><p class="box-label">Go-to-market</p><p id="go-to-market">—</p></div>
+            </div>
+
+            <div class="info-box"><p class="box-label">Recommendations</p><ul id="recommendations" class="reco-list"></ul></div>
+
+            <div class="info-box" id="investor-section">
+              <p class="box-label">Investor intelligence</p>
+              <p id="funding-landscape">—</p>
+              <div id="investor-list" class="investor-list"></div>
+            </div>
+
+            <div class="info-box" id="failure-section">
+              <p class="box-label">Failure case studies</p>
+              <div id="failure-list"></div>
+            </div>
+
+            <div class="rev-sim-panel" id="rev-sim-panel">
+              <p class="box-label">Revenue simulation</p>
+              <p class="rev-sim-sub" id="rev-sim-rationale">Tweak the sliders to explore different scenarios.</p>
+              <div class="rev-sliders">
+                <div class="slider-group">
+                  <label class="slider-label">Monthly price <span id="slider-price-val">$10</span></label>
+                  <input type="range" id="slider-price" min="1" max="500" step="1" value="10">
+                </div>
+                <div class="slider-group">
+                  <label class="slider-label">Initial users <span id="slider-users-val">100</span></label>
+                  <input type="range" id="slider-users" min="10" max="10000" step="10" value="100">
+                </div>
+                <div class="slider-group">
+                  <label class="slider-label">Monthly growth <span id="slider-growth-val">10%</span></label>
+                  <input type="range" id="slider-growth" min="1" max="50" step="1" value="10">
+                </div>
+                <div class="slider-group">
+                  <label class="slider-label">Monthly churn <span id="slider-churn-val">5%</span></label>
+                  <input type="range" id="slider-churn" min="1" max="30" step="1" value="5">
+                </div>
+              </div>
+              <div class="scenario-cards">
+                <div class="scenario-card scenario-pessimistic">
+                  <p class="scenario-label">Pessimistic</p>
+                  <p class="scenario-metric"><span class="scenario-val" id="pess-mrr">—</span><span class="scenario-unit">MRR</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="pess-users">—</span><span class="scenario-unit">users</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="pess-bep">—</span><span class="scenario-unit">break-even</span></p>
+                </div>
+                <div class="scenario-card scenario-base">
+                  <p class="scenario-label">Base</p>
+                  <p class="scenario-metric"><span class="scenario-val" id="base-mrr">—</span><span class="scenario-unit">MRR</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="base-users">—</span><span class="scenario-unit">users</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="base-bep">—</span><span class="scenario-unit">break-even</span></p>
+                </div>
+                <div class="scenario-card scenario-optimistic">
+                  <p class="scenario-label">Optimistic</p>
+                  <p class="scenario-metric"><span class="scenario-val" id="opti-mrr">—</span><span class="scenario-unit">MRR</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="opti-users">—</span><span class="scenario-unit">users</span></p>
+                  <p class="scenario-metric"><span class="scenario-val" id="opti-bep">—</span><span class="scenario-unit">break-even</span></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="report-actions">
+              <button class="reset-btn" onclick="exportPDF()">Download PDF</button>
+              <button class="reset-btn" onclick="resetForm()">Analyse another idea</button>
+            </div>
+
+            <div class="chat-panel" id="chat-panel">
+              <p class="box-label">Ask the AI</p>
+              <div class="chat-messages" id="chat-messages">
+                <div class="chat-bubble assistant">Ask me anything about this idea — pricing strategy, distribution channels, risks, pivots...</div>
+              </div>
+              <div class="chat-input-row">
+                <input id="chat-input" type="text" placeholder="e.g. How do I get my first 100 users?" autocomplete="off">
+                <button id="chat-send" onclick="sendChat()">Ask &rarr;</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-sidebar">
+            <div class="flowchart-panel" id="flowchart-panel">
+              <div class="flowchart-header">
+                <span class="flowchart-dot"></span>
+                <p class="box-label" style="margin-bottom:0">Business model</p>
+                <button class="fc-expand-btn" id="fc-expand-btn" title="Expand flowchart">&#x2922; Expand</button>
+              </div>
+              <div class="flowchart-container" id="flowchart-container">
+                <p class="flowchart-placeholder">Flowchart will appear here after analysis.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section how-section" id="how">
+    <canvas id="galaxy-canvas"></canvas>
+    <div class="section-inner">
+      <p class="eyebrow">Process</p>
+      <h2 class="section-title">Four steps. Thirty seconds.</h2>
+      <div class="how-diagram">
+        <div class="how-col how-col--left">
+          <div class="how-diag-card">
+            <span class="how-num">01</span>
+            <h3 class="how-title">Enter your idea</h3>
+            <p class="how-body">Describe your concept in plain English. No templates, no forms.</p>
+          </div>
+          <div class="how-diag-card">
+            <span class="how-num">02</span>
+            <h3 class="how-title">We search the web</h3>
+            <p class="how-body">Forma queries live web data, Reddit threads, and market signals in real time.</p>
+          </div>
+        </div>
+        <div class="how-center">
+          <div class="how-center-ring">
+            <div class="how-center-logo">
+              <svg width="32" height="32" viewBox="0 0 20 20">
+                <rect width="20" height="20" rx="3" fill="#0e0e0c"/>
+                <rect x="3" y="3" width="14" height="14" rx="2" fill="#f2f0eb"/>
+                <rect x="7" y="7" width="8" height="8" rx="1.5" fill="#0e0e0c"/>
+              </svg>
+            </div>
+            <p class="how-center-name">FORMA ENGINE</p>
+            <div class="how-center-pills">
+              <span>Search</span><span>Scrape</span><span>Analyse</span>
+            </div>
+          </div>
+          <div class="how-line how-line--left"></div>
+          <div class="how-line how-line--right"></div>
+        </div>
+        <div class="how-col how-col--right">
+          <div class="how-diag-card">
+            <span class="how-num">03</span>
+            <h3 class="how-title">AI synthesises</h3>
+            <p class="how-body">Our model distills the noise into a clear, honest research brief.</p>
+          </div>
+          <div class="how-diag-card">
+            <span class="how-num">04</span>
+            <h3 class="how-title">You decide</h3>
+            <p class="how-body">Armed with real data, build with confidence — or pivot before it costs you.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <canvas id="prism-canvas"></canvas>
+    <div class="section-inner">
+      <div class="feat-layout">
+        <div class="feat-left">
+          <p class="eyebrow">Why Forma</p>
+          <h2 class="section-title" style="margin-bottom:0">Research that doesn't slow you down</h2>
+          <p class="feat-left-sub">Six reasons founders choose Forma before they build.</p>
+        </div>
+        <div class="feat-right">
+          <div class="card-swap-container" id="card-swap">
+            <div class="card feat-swap-card"><div class="feat-icon">⚡</div><h3>Real-time data</h3><p>No stale databases. Every report pulls live from the web the moment you ask.</p></div>
+            <div class="card feat-swap-card"><div class="feat-icon"></div><h3>Competitor mapping</h3><p>Instantly see who's already in your space and how crowded it is.</p></div>
+            <div class="card feat-swap-card"><div class="feat-icon"></div><h3>Honest scoring</h3><p>A clear 1-10 score with the reasoning behind it — no fluff.</p></div>
+            <div class="card feat-swap-card"><div class="feat-icon"></div><h3>Local market lens</h3><p>Understands regional nuance. Srinagar isn't San Francisco.</p></div>
+            <div class="card feat-swap-card"><div class="feat-icon"></div><h3>30-second reports</h3><p>What used to take a week now takes less than a minute.</p></div>
+            <div class="card feat-swap-card"><div class="feat-icon"></div><h3>Your idea stays yours</h3><p>We don't store, sell, or train on your inputs. Full stop.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <svg width="22" height="22" viewBox="0 0 20 20">
+          <rect width="20" height="20" rx="3" fill="#0e0e0c"/>
+          <rect x="3" y="3" width="14" height="14" rx="2" fill="#f2f0eb"/>
+          <rect x="7" y="7" width="8" height="8" rx="1.5" fill="#0e0e0c"/>
+        </svg>
+        <span>FORMA</span>
+      </div>
+      <p class="footer-copy">© 2026 Forma. Research before you build.</p>
+    </div>
+  </footer>
+
+  <!-- Flowchart lightbox modal -->
+  <div class="fc-modal" id="fc-modal" aria-hidden="true">
+    <div class="fc-modal-backdrop" id="fc-modal-backdrop"></div>
+    <div class="fc-modal-box">
+      <div class="fc-modal-header">
+        <span class="flowchart-dot"></span>
+        <span class="fc-modal-title">Business model</span>
+        <div class="fc-modal-controls">
+          <button class="fc-zoom-btn" id="fc-zoom-in" title="Zoom in">&#xFF0B;</button>
+          <button class="fc-zoom-btn" id="fc-zoom-out" title="Zoom out">&#xFF0D;</button>
+          <button class="fc-zoom-btn" id="fc-zoom-reset" title="Reset zoom">&#x27F3;</button>
+          <button class="fc-close-btn" id="fc-close-btn" title="Close">&#x2715;</button>
+        </div>
+      </div>
+      <div class="fc-modal-content" id="fc-modal-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
