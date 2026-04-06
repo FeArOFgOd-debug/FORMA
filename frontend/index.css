@@ -55,9 +55,13 @@ body {
 .analyse-section {
   margin: 6px 16px;
   border-radius: 24px;
-  overflow: hidden;
   position: relative;
   z-index: 1;
+}
+
+.section,
+.analyse-section {
+  overflow: hidden;
   content-visibility: auto;
   contain-intrinsic-size: auto 100vh;
 }
@@ -157,6 +161,8 @@ body {
   gap: 60px;
   padding: 120px 64px 80px;
   max-width: calc(100% - 32px);
+  overflow: visible;
+  content-visibility: visible;
 }
 
 #aurora-canvas {
@@ -214,7 +220,8 @@ body {
   letter-spacing: -0.02em;
   color: var(--paper);
   margin-bottom: 24px;
-  min-height: 2.5em;
+  min-height: calc(2 * 1.08 * 1em);
+  white-space: pre-line;
   animation: fadeUp 0.65s 0.08s ease both;
 }
 
@@ -1504,7 +1511,11 @@ body {
 }
 
 @media (max-width: 960px) {
-  .hero { flex-direction: column; padding: 120px 24px 60px; gap: 48px; }
+  .hero {
+    flex-direction: column;
+    padding: max(120px, calc(env(safe-area-inset-top) + 80px)) 24px 60px;
+    gap: 48px;
+  }
   .hero-right { flex: unset; width: 100%; }
   .report-card { max-width: 480px; }
   .how-diagram { grid-template-columns: 1fr; gap: 24px; }
@@ -1527,10 +1538,276 @@ body {
   .search-btn { padding: 16px; width: 100%; }
   .footer-inner { flex-direction: column; gap: 12px; text-align: center; }
   .hero, .section, .analyse-section, .footer { margin-left: 8px; margin-right: 8px; }
+  .hero-headline { min-height: 2.85em; }
   .fc-modal-box { width: 96vw; height: 90vh; border-radius: 10px; }
   .sentiment-gauge-row { flex-direction: column; }
 }
 
 
+/* ─────────────────────────────────────────
+/* ─────────────────────────────────────────
+   FORMA — full responsive patch
+   Paste at the very bottom of index.css
+   ───────────────────────────────────────── */
 
+/* ══════════════════════════════════════════
+   HERO — base fixes (all screen sizes)
+   ══════════════════════════════════════════ */
 
+/* Aurora canvas must stay behind all hero content */
+#aurora-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0 !important;
+  pointer-events: none;
+}
+
+/* hero-left stacks above canvas */
+.hero-left {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  flex: 1;
+}
+
+/* hero-right stacks above canvas */
+.hero-right {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Tagline span (#tagline-text inside h1.hero-headline) ── */
+#tagline-text {
+  display: inline;
+  color: var(--paper);
+  -webkit-text-fill-color: var(--paper);
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ── hero-headline (h1 wrapping the span) ── */
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5.5vw, 5.2rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  -webkit-text-fill-color: var(--paper);
+  margin-bottom: 24px;
+  min-height: calc(2 * 1.08 * clamp(2.4rem, 5.5vw, 5.2rem));
+  white-space: pre-line;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  position: relative;
+  z-index: 2;
+  opacity: 1;
+  animation: fadeUp 0.65s 0.08s ease both;
+}
+
+/* ── hero-sub (p tag — the paragraph tagline) ── */
+.hero-sub {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(13px, 1.4vw, 16px);
+  color: var(--paper-dim);
+  -webkit-text-fill-color: var(--paper-dim);
+  opacity: 1 !important;
+  visibility: visible !important;
+  max-width: 480px;
+  margin-bottom: 36px;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  animation: fadeUp 0.65s 0.14s ease both;
+  animation-fill-mode: both;
+}
+
+/* ── cursor ── */
+.cursor {
+  display: inline-block;
+  width: 3px;
+  height: 0.82em;
+  background: var(--accent);
+  margin-left: 5px;
+  vertical-align: middle;
+  border-radius: 2px;
+  animation: blink 0.8s step-end infinite;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── hero-actions ── */
+.hero-actions {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── powered-by ── */
+.powered-by {
+  position: relative;
+  z-index: 2;
+}
+
+/* ══════════════════════════════════════════
+   TABLET (≤960px)
+   ══════════════════════════════════════════ */
+@media (max-width: 960px) {
+  .hero {
+    flex-direction: column;
+    padding: 120px 32px 60px;
+    gap: 40px;
+    align-items: flex-start;
+  }
+
+  .hero-left {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-right {
+    width: 100%;
+    flex: unset;
+  }
+
+  .hero-headline {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    min-height: calc(2 * 1.08 * clamp(2.2rem, 5vw, 3.6rem));
+    white-space: normal;            /* allow natural wrap on tablet */
+  }
+
+  #tagline-text {
+    display: inline;
+    white-space: normal;
+  }
+
+  .hero-sub {
+    font-size: clamp(14px, 2vw, 16px);
+    max-width: 100%;                /* full width when stacked */
+    margin-bottom: 28px;
+    color: var(--paper-dim);
+    -webkit-text-fill-color: var(--paper-dim);
+  }
+
+  .report-card {
+    max-width: 100%;
+  }
+}
+
+/* ══════════════════════════════════════════
+   MOBILE (≤640px)
+   ══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .hero {
+    padding: 100px 20px 48px;
+    gap: 36px;
+  }
+
+  .hero-left {
+    width: 100%;
+  }
+
+  .hero-right {
+    width: 100%;
+  }
+
+  .hero-headline {
+    font-size: clamp(1.9rem, 8.5vw, 2.6rem);
+    min-height: calc(2 * 1.12 * clamp(1.9rem, 8.5vw, 2.6rem));
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    white-space: normal;
+    margin-bottom: 16px;
+  }
+
+  #tagline-text {
+    display: inline;
+    white-space: normal;
+    color: var(--paper);
+    -webkit-text-fill-color: var(--paper);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .cursor {
+    height: 0.75em;
+    width: 2.5px;
+    margin-left: 3px;
+  }
+
+  .hero-sub {
+    font-size: clamp(13px, 3.8vw, 15px) !important;
+    color: #9a9890 !important;
+    -webkit-text-fill-color: #9a9890 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    line-height: 1.65;
+    margin-bottom: 24px;
+    max-width: 100%;
+    display: block;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-badge {
+    font-size: 9px;
+    padding: 5px 12px;
+    margin-bottom: 20px;
+  }
+
+  .hero-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+
+  .btn-primary,
+  .btn-ghost {
+    width: 100%;
+    text-align: center;
+    padding: 14px 20px;
+  }
+
+  .nav {
+    padding: 14px 20px;
+  }
+
+  .nav-links a:not(.nav-cta) {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════
+   SMALL PHONES (≤380px)
+   ══════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .hero {
+    padding: 90px 16px 40px;
+  }
+
+  .hero-headline {
+    font-size: clamp(1.7rem, 9vw, 2rem);
+    min-height: calc(2 * 1.12 * clamp(1.7rem, 9vw, 2rem));
+  }
+
+  .hero-sub {
+    font-size: 13px !important;
+    color: #9a9890 !important;
+    -webkit-text-fill-color: #9a9890 !important;
+    line-height: 1.6;
+  }
+}
+
+/* ══════════════════════════════════════════
+   ANIMATION — ensure fadeUp always resolves
+   ══════════════════════════════════════════ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
