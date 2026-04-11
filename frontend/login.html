@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Forma Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-page-wrap">
+    <section class="auth-page-card">
+      <p class="eyebrow">Account</p>
+      <h1 id="auth-page-title">Log in to Forma</h1>
+      <p class="auth-page-sub">Create an account first time, then log in to access your reports and chats.</p>
+
+      <div class="auth-page-switch">
+        <button type="button" id="page-login-btn" class="auth-switch active">Login</button>
+        <button type="button" id="page-register-btn" class="auth-switch">Register</button>
+      </div>
+
+      <form id="page-login-form" class="auth-form">
+        <input id="page-login-email" type="email" placeholder="Email" required />
+        <input id="page-login-password" type="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+
+      <form id="page-register-form" class="auth-form hidden">
+        <input id="page-register-email" type="email" placeholder="Email" required />
+        <input id="page-register-password" type="password" placeholder="Password (min 6 chars)" minlength="6" required />
+        <button type="submit">Register</button>
+      </form>
+
+      <p id="auth-page-note" class="auth-note"></p>
+      <a href="index.html#analyse" class="btn-ghost" style="display:inline-block;margin-top:8px">Back to home</a>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="login.js"></script>
+</body>
+</html>

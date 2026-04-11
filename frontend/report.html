@@ -24,8 +24,15 @@
       </svg>
       <span class="nav-wordmark">FORMA</span>
     </div>
-    <div class="report-nav-actions">
+    <button class="nav-hamburger" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="report-nav-menu" data-nav-toggle>
+      <span class="nav-hamburger-lines"><span></span><span></span><span></span></span>
+    </button>
+    <div class="report-nav-actions nav-menu-panel" id="report-nav-menu">
       <a href="index.html#analyse" class="btn-ghost report-back-btn">← New idea</a>
+      <span class="auth-user-pill hidden" id="auth-user-label"></span>
+      <button class="auth-link-btn" id="auth-login-btn" type="button">Log in</button>
+      <button class="auth-link-btn" id="auth-register-btn" type="button">Register</button>
+      <button class="auth-link-btn hidden" id="auth-logout-btn" type="button">Logout</button>
     </div>
   </nav>
 
@@ -63,19 +70,28 @@
     </section>
 
     <section class="report-shell" id="report-shell">
-      <div class="report-shell-top">
-        <div class="report-tabs">
-          <a href="#overview">Overview</a>
-          <a href="#swot-section">SWOT</a>
-          <a href="#competitors-section">Competitors</a>
-          <a href="#vc-section">VC</a>
-          <a href="#sentiment-section">Sentiment</a>
-          <a href="#revenue-section">Revenue</a>
-          <a href="#insights-section">Insights</a>
-        </div>
-      </div>
+      <div class="report-content-layout">
+        <aside class="history-sidebar" id="history-sidebar">
+          <p class="box-label">Previous analyses</p>
+          <p class="history-sidebar-sub">Jump back into past reports.</p>
+          <div class="history-sidebar-list" id="history-sidebar-list"></div>
+          <p class="history-sidebar-empty" id="history-sidebar-empty">No previous analyses yet.</p>
+        </aside>
 
-      <section class="report-hero-band" id="overview">
+        <div class="report-content-main">
+          <div class="report-shell-top">
+            <div class="report-tabs">
+              <a href="#overview">Overview</a>
+              <a href="#swot-section">SWOT</a>
+              <a href="#competitors-section">Competitors</a>
+              <a href="#vc-section">VC</a>
+              <a href="#sentiment-section">Sentiment</a>
+              <a href="#revenue-section">Revenue</a>
+              <a href="#insights-section">Insights</a>
+            </div>
+          </div>
+
+          <section class="report-hero-band" id="overview">
         <div class="score-row">
           <div class="score-circle">
             <span id="score-num">8</span><span class="score-denom">/10</span>
@@ -279,11 +295,13 @@
             <div class="chat-bubble assistant">Ask me anything about this idea — pricing strategy, distribution channels, risks, pivots...</div>
           </div>
         </section>
-      </section>
+          </section>
+        </div>
+      </div>
     </section>
   </main>
 
-  <div class="report-chat-dock" id="chat-panel">
+  <div class="report-chat-dock" id="chat-panel" style="display:none">
     <div class="chat-dock-inner">
       <span class="chat-dock-label">Ask the AI</span>
       <div class="chat-input-row">
@@ -310,6 +328,10 @@
     </div>
   </div>
 
+  <div id="auth-modal-root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="nav.js"></script>
   <script src="report.js"></script>
 </body>
 </html>

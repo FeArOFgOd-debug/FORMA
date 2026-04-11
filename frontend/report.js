@@ -7,6 +7,45 @@ const API_BASE =
 let _currentJobId = null;
 let _chatHistory = [];
 let _etaInterval = null;
+let _historyItems = [];
+let _historyLoadError = '';
+const AUTH_REDIRECT_TS_KEY = 'forma_auth_redirect_ts';
+const AUTH_REDIRECT_COOLDOWN_MS = 8000;
+
+async function getAuthHeaders() {
+  const token = window.Auth ? await window.Auth.getAccessToken() : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function redirectToLoginFromReport() {
+  const now = Date.now();
+  const last = Number(sessionStorage.getItem(AUTH_REDIRECT_TS_KEY) || 0);
+  if (Number.isFinite(last) && now - last < AUTH_REDIRECT_COOLDOWN_MS) {
+    setText('status-msg', 'Session check failed. Please log in again.');
+    return false;
+  }
+  sessionStorage.setItem(AUTH_REDIRECT_TS_KEY, String(now));
+  if (window.Auth?.redirectToLogin) {
+    window.Auth.redirectToLogin();
+  } else {
+    window.location.href = 'login.html?mode=login&next=' + encodeURIComponent(window.location.href);
+  }
+  return true;
+}
+
+function clearAuthRedirectGuard() {
+  sessionStorage.removeItem(AUTH_REDIRECT_TS_KEY);
+}
+
+async function ensureLoggedIn() {
+  if (!window.Auth) return false;
+  const ok = await window.Auth.requireUser();
+  if (!ok) {
+    window.Auth.redirectToLogin();
+    return false;
+  }
+  return true;
+}
 
 function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -19,6 +58,89 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s ?? '';
   return d.innerHTML;
+}
+
+function historyIdeaLabel(item) {
+  const direct = String(item?.idea || '').trim();
+  if (direct) return direct;
+  const nested = String(item?.result?.analysis?.idea || item?.result?.idea || '').trim();
+  return nested || 'Untitled idea';
+}
+
+function formatHistoryTime(ts) {
+  const n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return 'Unknown time';
+  return new Date(n).toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function renderHistorySidebar(items) {
+  const listEl = document.getElementById('history-sidebar-list');
+  const emptyEl = document.getElementById('history-sidebar-empty');
+  if (!listEl || !emptyEl) return;
+  const defaultEmptyText = emptyEl.getAttribute('data-default-text') || emptyEl.textContent || 'No reports yet.';
+  if (!emptyEl.getAttribute('data-default-text')) {
+    emptyEl.setAttribute('data-default-text', defaultEmptyText);
+  }
+
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    listEl.innerHTML = '';
+    emptyEl.textContent = _historyLoadError || defaultEmptyText;
+    emptyEl.style.display = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  const current = String(_currentJobId || '');
+  listEl.innerHTML = rows.map((item) => {
+    const jobId = String(item?.job_id || item?._id || '');
+    const idea = historyIdeaLabel(item);
+    const created = formatHistoryTime(item?.created_at);
+    const active = current && jobId === current ? ' is-active' : '';
+    return `<button class="history-item${active}" data-job-id="${esc(jobId)}" data-idea="${esc(idea)}" type="button">
+      <span class="history-item-idea">${esc(idea)}</span>
+      <span class="history-item-meta">${esc(created)}</span>
+    </button>`;
+  }).join('');
+
+  listEl.querySelectorAll('.history-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const jobId = btn.getAttribute('data-job-id') || '';
+      const idea = btn.getAttribute('data-idea') || '';
+      if (!jobId || jobId === _currentJobId) return;
+      const q = new URLSearchParams({ job_id: jobId });
+      if (idea) q.set('idea', idea);
+      window.location.href = `report.html?${q.toString()}`;
+    });
+  });
+}
+
+async function loadHistorySidebar() {
+  try {
+    const authHeaders = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/history`, { headers: { ...authHeaders } });
+    if (res.status === 401 || res.status === 403) {
+      const redirected = redirectToLoginFromReport();
+      return redirected;
+    }
+    if (!res.ok) throw new Error(`History request failed: ${res.status}`);
+    clearAuthRedirectGuard();
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('History response format is invalid');
+    _historyItems = data;
+    _historyLoadError = '';
+  } catch (err) {
+    console.error('Failed to load history:', err);
+    _historyItems = [];
+    _historyLoadError = 'Could not load your history right now. Please try again.';
+  }
+  renderHistorySidebar(_historyItems);
+  return true;
 }
 
 function formatSourceLabel(source) {
@@ -513,6 +635,37 @@ function fmtNum(n) {
   return String(Math.round(n));
 }
 
+function compactIdeaLabel(idea) {
+  const clean = String(idea || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return 'this startup';
+  const words = clean.split(' ').slice(0, 6);
+  return words.join(' ');
+}
+
+function brutalLoadingHeadline(idea) {
+  const label = compactIdeaLabel(idea);
+  return `Brutal check: does "${label}" survive real users?`;
+}
+
+function brutalFinalHeadline(idea, analysis) {
+  const a = analysis || {};
+  const verdict = String(a.verdict || '').toLowerCase();
+  const score = Number(a.confidence_score || 0.5);
+  const riskCount = Array.isArray(a.risk_factors) ? a.risk_factors.length : 0;
+  const label = compactIdeaLabel(idea);
+
+  if (score < 0.45 || verdict.includes('weak') || verdict.includes('poor') || verdict.includes('not')) {
+    return `This idea likely fails: "${label}" has no margin for mistakes.`;
+  }
+  if (riskCount >= 4 || score < 0.6) {
+    return `Harsh truth: "${label}" breaks unless execution is near-perfect.`;
+  }
+  if (score >= 0.75 && (verdict.includes('promising') || verdict.includes('strong') || verdict.includes('good'))) {
+    return `Strong signal, brutal reality: "${label}" still dies without distribution.`;
+  }
+  return `Brutal verdict: "${label}" wins only if you out-execute everyone.`;
+}
+
 function recalcSimulation() {
   const price = Number(document.getElementById('slider-price')?.value || 10);
   const users = Number(document.getElementById('slider-users')?.value || 100);
@@ -541,9 +694,10 @@ function recalcSimulation() {
 function populateReport(idea, data) {
   const a = data.analysis || data;
   const sent = data.sentiment || {};
+  const headline = brutalFinalHeadline(idea, a);
 
-  setText('report-title', idea);
-  setText('loading-idea-title', idea);
+  setText('report-title', headline);
+  setText('loading-idea-title', headline);
 
   const score = Math.round((a.confidence_score || 0.5) * 10);
   setText('score-num', score);
@@ -649,8 +803,10 @@ function populateReport(idea, data) {
 function showReportView() {
   const loading = document.getElementById('report-loading');
   const shell = document.getElementById('report-shell');
+  const chatPanel = document.getElementById('chat-panel');
   if (loading) loading.classList.remove('visible');
   if (shell) shell.classList.add('visible');
+  if (chatPanel) chatPanel.style.display = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -708,7 +864,15 @@ async function pollJob(jobId, idea) {
 
   while (true) {
     try {
-      const res = await fetch(`${API_BASE}/jobs/${jobId}`);
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/jobs/${jobId}`, { headers: { ...authHeaders } });
+      if (res.status === 401 || res.status === 403) {
+        redirectToLoginFromReport();
+        clearInterval(_etaInterval);
+        return;
+      }
+      if (!res.ok) throw new Error(`Job polling failed (${res.status})`);
+      clearAuthRedirectGuard();
       const job = await res.json();
       const pct = Number(job.progress || 0);
       updateProgress(pct, startTime);
@@ -734,6 +898,7 @@ async function pollJob(jobId, idea) {
         }
         populateReport(idea, result || fallbackReport());
         showReportView();
+        await loadHistorySidebar();
         return;
       }
 
@@ -872,6 +1037,7 @@ function scrollChatIntoView() {
 }
 
 async function sendChat() {
+  if (!(await ensureLoggedIn())) return;
   const input = document.getElementById('chat-input');
   const messages = document.getElementById('chat-messages');
   if (!input || !messages) return;
@@ -895,9 +1061,10 @@ async function sendChat() {
   scrollChatIntoView();
 
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({
         job_id: _currentJobId,
         message: text,
@@ -927,9 +1094,14 @@ async function sendChat() {
   }
 }
 
-function exportPDF() {
+async function exportPDF() {
+  if (!(await ensureLoggedIn())) return;
   if (!_currentJobId) return;
-  window.open(`${API_BASE}/export/${_currentJobId}/pdf`, '_blank');
+  const token = window.Auth ? await window.Auth.getAccessToken() : null;
+  const url = token
+    ? `${API_BASE}/export/${_currentJobId}/pdf?access_token=${encodeURIComponent(token)}`
+    : `${API_BASE}/export/${_currentJobId}/pdf`;
+  window.open(url, '_blank');
 }
 
 function resetToHome() {
@@ -1074,23 +1246,56 @@ function setupReportTabs() {
 }
 
 async function bootstrap() {
+  if (window.Auth) await window.Auth.initAuthUI();
+  if (!(await ensureLoggedIn())) return;
   initDotCanvas();
   initAuroraCanvas();
   initSliders();
   setupChatEnterKey();
   initFlowchartModal();
   setupReportTabs();
+  const historyOk = await loadHistorySidebar();
+  if (!historyOk) return;
   const params = new URLSearchParams(window.location.search);
-  const jobId = params.get('job_id');
+  let jobId = params.get('job_id');
   const idea = params.get('idea');
 
-  if (!jobId) {
+  if (!jobId && !idea) {
     window.location.href = 'index.html#analyse';
     return;
   }
 
+  setText('loading-idea-title', brutalLoadingHeadline(idea || 'your idea'));
+
+  if (!jobId) {
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ idea })
+      });
+      if (res.status === 401 || res.status === 403) {
+        redirectToLoginFromReport();
+        return;
+      }
+      if (!res.ok) throw new Error(`Failed to start analysis (${res.status})`);
+      clearAuthRedirectGuard();
+      const data = await res.json();
+      jobId = data?.job_id;
+      if (!jobId) throw new Error('No job_id returned from backend');
+    } catch (err) {
+      console.error('Failed to start analysis:', err);
+      const statusMsg = document.getElementById('status-msg');
+      if (statusMsg) statusMsg.textContent = 'Could not reach the analysis service. Showing fallback report.';
+      populateReport(idea || 'Your idea', fallbackReport());
+      showReportView();
+      return;
+    }
+  }
+
   _currentJobId = jobId;
-  setText('loading-idea-title', idea || 'Analysing your idea');
+  renderHistorySidebar(_historyItems);
   await pollJob(jobId, idea || 'Your idea');
 }
 

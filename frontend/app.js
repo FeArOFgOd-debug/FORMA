@@ -832,6 +832,21 @@ let _currentJobId = null;
 let _etaInterval = null;
 let _chatHistory = [];
 
+async function getAuthHeaders() {
+  const token = window.Auth ? await window.Auth.getAccessToken() : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function ensureLoggedIn() {
+  if (!window.Auth) return false;
+  const ok = await window.Auth.requireUser();
+  if (!ok) {
+    window.Auth.redirectToLogin();
+    return false;
+  }
+  return true;
+}
+
 function setIdea(text) {
   document.getElementById('idea-input').value = text;
 }
@@ -913,28 +928,13 @@ function progressToStep(progress) {
 }
 
 async function startAnalysis() {
+  if (!(await ensureLoggedIn())) return;
   const input = document.getElementById('idea-input');
   const idea  = input.value.trim();
   if (!idea) { input.focus(); return; }
 
-  try {
-    const res = await fetch(`${API_BASE}/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idea })
-    });
-    if (!res.ok) throw new Error(`Failed to start analysis (${res.status})`);
-    const data = await res.json();
-    if (!data?.job_id) throw new Error('No job_id returned from backend');
-    const params = new URLSearchParams({ job_id: data.job_id, idea });
-    window.location.href = `report.html?${params.toString()}`;
-  } catch (err) {
-    console.error('Failed to start analysis:', err);
-    const statusBar = document.getElementById('status-bar');
-    const statusMsg = document.getElementById('status-msg');
-    if (statusBar) statusBar.classList.add('visible');
-    if (statusMsg) statusMsg.textContent = 'Could not start analysis. Please try again.';
-  }
+  const params = new URLSearchParams({ idea });
+  window.location.href = `report.html?${params.toString()}`;
 }
 
 function fallbackReport() {
@@ -1779,6 +1779,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /* --- Chat --- */
 
 async function sendChat() {
+  if (!(await ensureLoggedIn())) return;
   const input = document.getElementById('chat-input');
   const messages = document.getElementById('chat-messages');
   if (!input || !messages) return;
@@ -1802,9 +1803,10 @@ async function sendChat() {
   messages.scrollTop = messages.scrollHeight;
 
   try {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
       body: JSON.stringify({
         job_id: _currentJobId,
         message: text,
@@ -1849,7 +1851,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* --- PDF Export --- */
 
-function exportPDF() {
+async function exportPDF() {
+  if (!(await ensureLoggedIn())) return;
   if (!_currentJobId) return;
-  window.open(`${API_BASE}/export/${_currentJobId}/pdf`, '_blank');
+  const token = window.Auth ? await window.Auth.getAccessToken() : null;
+  const url = token
+    ? `${API_BASE}/export/${_currentJobId}/pdf?access_token=${encodeURIComponent(token)}`
+    : `${API_BASE}/export/${_currentJobId}/pdf`;
+  window.open(url, '_blank');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.Auth) window.Auth.initAuthUI();
+});

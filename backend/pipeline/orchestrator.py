@@ -229,7 +229,7 @@ async def _safe_tracked(label: str, coro, job_id: str | None, pct: int, msg: str
     return result
 
 
-async def run_pipeline(idea: str, *, job_id: str | None = None) -> dict[str, Any]:
+async def run_pipeline(idea: str, *, job_id: str | None = None, user_id: str | None = None) -> dict[str, Any]:
     """Full analysis pipeline for a business idea.
 
     Phase 1 — data gathering (parallel): Exa search, Reddit, Twitter
@@ -453,8 +453,8 @@ async def run_pipeline(idea: str, *, job_id: str | None = None) -> dict[str, Any
             "errors": errors if errors else None,
         }
 
-        if job_id:
-            complete_job(job_id, result)
+        if job_id and user_id:
+            complete_job(job_id, result, user_id)
 
         return result
 

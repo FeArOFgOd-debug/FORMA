@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -11,8 +11,15 @@ from typing import List, Optional
 
 from openai import OpenAI
 
-from backend.config import OPENAI_API_KEY
-from backend.convex_client import create_job, get_analysis, get_job, list_analyses
+from backend.auth import AuthUser, get_current_user, get_current_user_with_query_token
+from backend.config import OPENAI_API_KEY, SUPABASE_ANON_KEY, SUPABASE_URL
+from backend.convex_client import (
+    create_job,
+    get_analysis,
+    get_job,
+    list_analyses,
+    upsert_user_profile,
+)
 from backend.pipeline.orchestrator import run_pipeline
 from backend.pipeline.pdf_export import generate_pdf
 from backend.pipeline.revenue_simulation import run_simulation
@@ -40,29 +47,40 @@ class AnalyzeRequest(BaseModel):
     )
 
 
-async def _run_pipeline_bg(idea: str, job_id: str) -> None:
+async def _run_pipeline_bg(idea: str, job_id: str, user_id: str) -> None:
     """Background wrapper — exceptions are caught by the orchestrator and sent to Convex."""
     try:
-        await run_pipeline(idea, job_id=job_id)
+        await run_pipeline(idea, job_id=job_id, user_id=user_id)
+    except Exception:
+        pass
+
+
+def _sync_user_profile_best_effort(user: AuthUser) -> None:
+    try:
+        upsert_user_profile(
+            user_id=user.user_id,
+            email=(user.email or "").strip(),
+        )
     except Exception:
         pass
 
 
 @app.post("/analyze")
-async def analyze(req: AnalyzeRequest, bg: BackgroundTasks):
+async def analyze(req: AnalyzeRequest, bg: BackgroundTasks, user: AuthUser = Depends(get_current_user)):
+    _sync_user_profile_best_effort(user)
     try:
-        job_id = create_job(req.idea)
+        job_id = create_job(req.idea, user.user_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
 
-    bg.add_task(_run_pipeline_bg, req.idea, job_id)
+    bg.add_task(_run_pipeline_bg, req.idea, job_id, user.user_id)
     return {"job_id": job_id}
 
 
 @app.get("/jobs/{job_id}")
-async def job_status(job_id: str):
+async def job_status(job_id: str, user: AuthUser = Depends(get_current_user)):
     try:
-        job = get_job(job_id)
+        job = get_job(job_id, user.user_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
     if job is None:
@@ -78,7 +96,7 @@ async def job_status(job_id: str):
     if status == "completed":
         resp["status"] = "complete"
         try:
-            record = get_analysis(job_id)
+            record = get_analysis(job_id, user.user_id)
             if record and record.get("result"):
                 result = record["result"]
                 if isinstance(result, str):
@@ -97,9 +115,10 @@ async def job_status(job_id: str):
 
 
 @app.get("/history")
-async def history():
+async def history(user: AuthUser = Depends(get_current_user)):
+    _sync_user_profile_best_effort(user)
     try:
-        items = list_analyses()
+        items = list_analyses(user.user_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
 
@@ -113,9 +132,10 @@ async def history():
 
 
 @app.get("/history/{job_id}")
-async def history_detail(job_id: str):
+async def history_detail(job_id: str, user: AuthUser = Depends(get_current_user)):
+    _sync_user_profile_best_effort(user)
     try:
-        record = get_analysis(job_id)
+        record = get_analysis(job_id, user.user_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
     if record is None:
@@ -130,9 +150,9 @@ async def history_detail(job_id: str):
 
 
 @app.get("/export/{job_id}/pdf")
-async def export_pdf(job_id: str):
+async def export_pdf(job_id: str, user: AuthUser = Depends(get_current_user_with_query_token)):
     try:
-        record = get_analysis(job_id)
+        record = get_analysis(job_id, user.user_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
     if record is None:
@@ -171,7 +191,7 @@ class SimulationRequest(BaseModel):
 
 
 @app.post("/simulate/revenue")
-async def simulate_revenue(req: SimulationRequest):
+async def simulate_revenue(req: SimulationRequest, user: AuthUser = Depends(get_current_user)):
     """Run a revenue simulation with tweakable parameters.
 
     If job_id is provided, loads AI-generated defaults from the stored
@@ -182,7 +202,7 @@ async def simulate_revenue(req: SimulationRequest):
 
     if req.job_id:
         try:
-            record = get_analysis(req.job_id)
+            record = get_analysis(req.job_id, user.user_id)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Convex error: {exc}")
         if record is None:
@@ -216,9 +236,9 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, user: AuthUser = Depends(get_current_user)):
     try:
-        record = get_analysis(req.job_id)
+        record = get_analysis(req.job_id, user.user_id)
     except Exception:
         record = None
 
@@ -257,3 +277,11 @@ async def chat(req: ChatRequest):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/config/public")
+async def public_config():
+    return {
+        "supabase_url": SUPABASE_URL,
+        "supabase_anon_key": SUPABASE_ANON_KEY,
+    }

@@ -25,10 +25,17 @@
       </svg>
       <span class="nav-wordmark">FORMA</span>
     </div>
-    <div class="nav-links">
+    <button class="nav-hamburger" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="primary-nav-menu" data-nav-toggle>
+      <span class="nav-hamburger-lines"><span></span><span></span><span></span></span>
+    </button>
+    <div class="nav-links nav-menu-panel" id="primary-nav-menu">
       <a href="#how">How it works</a>
       <a href="#features">Features</a>
       <a href="#analyse" class="nav-cta">Try it free →</a>
+      <span class="auth-user-pill hidden" id="auth-user-label"></span>
+      <button class="auth-link-btn" id="auth-login-btn" type="button">Log in</button>
+      <button class="auth-link-btn" id="auth-register-btn" type="button">Register</button>
+      <button class="auth-link-btn hidden" id="auth-logout-btn" type="button">Logout</button>
     </div>
   </nav>
 
@@ -51,12 +58,10 @@
         <a href="#how" class="btn-ghost">See how it works</a>
       </div>
       <div class="powered-by">
-       <div class="powered-by">
-  <span class="powered-label">Powered by</span>
-  <div class="logoloop" id="logoloop">
-    <div class="logoloop__track" id="logoloop-track"></div>
-  </div>
-</div>
+        <span class="powered-label">Powered by</span>
+        <div class="logoloop" id="logoloop">
+          <div class="logoloop__track" id="logoloop-track"></div>
+        </div>
       </div>
     </div>
 
@@ -452,6 +457,10 @@
     </div>
   </div>
 
+  <div id="auth-modal-root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="nav.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
