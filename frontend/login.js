@@ -61,12 +61,17 @@
     const token = data?.session?.access_token;
     if (!token) return false;
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(`${API_BASE}/history`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
       });
-      return res.ok;
+      clearTimeout(timeoutId);
+      if (res.status === 401 || res.status === 403) return false;
+      return true;
     } catch (_err) {
-      return false;
+      return true;
     }
   }
 
@@ -79,7 +84,7 @@
     if (error) return setNote(error.message, true);
     const backendOk = await canUseBackendWithSession();
     if (!backendOk) {
-      setNote('Logged in, but session could not be verified yet. Please try again.', true);
+      setNote('Session rejected by server. Please try again.', true);
       await client.auth.signOut();
       return;
     }
