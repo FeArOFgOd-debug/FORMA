@@ -1854,11 +1854,22 @@ document.addEventListener('DOMContentLoaded', () => {
 async function exportPDF() {
   if (!(await ensureLoggedIn())) return;
   if (!_currentJobId) return;
-  const token = window.Auth ? await window.Auth.getAccessToken() : null;
-  const url = token
-    ? `${API_BASE}/export/${_currentJobId}/pdf?access_token=${encodeURIComponent(token)}`
-    : `${API_BASE}/export/${_currentJobId}/pdf`;
-  window.open(url, '_blank');
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/export/${_currentJobId}/pdf`, { headers });
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `forma_${_currentJobId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('PDF export error:', err);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

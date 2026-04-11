@@ -339,6 +339,8 @@ body::before {
   border: none;
   box-shadow: 0 0 20px rgba(91,140,255,0.4);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .btn-primary:hover { box-shadow: 0 0 32px rgba(91,140,255,0.6); transform: translateY(-1px); }
@@ -356,6 +358,8 @@ body::before {
   background: rgba(91,140,255,0.06);
   border-radius: 999px;
   transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .btn-ghost:hover { border-color: #5B8CFF; color: #fff; box-shadow: 0 0 12px rgba(91,140,255,0.25); }
@@ -988,6 +992,8 @@ body::before {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
   padding: 24px 26px;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
@@ -1017,6 +1023,7 @@ body::before {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
   padding: 24px 26px;
+  box-sizing: border-box;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .competitors-card:hover { border-color: rgba(91,140,255,0.35); box-shadow: var(--glow-blue); transform: translateY(-2px); }
@@ -1235,6 +1242,7 @@ body::before {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
   padding: 24px 28px;
+  box-sizing: border-box;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .rev-sim-panel:hover { border-color: rgba(91,140,255,0.35); box-shadow: var(--glow-blue); transform: translateY(-2px); }
@@ -1262,6 +1270,7 @@ body::before {
 .slider-group label span { color: var(--accent); font-weight: 600; }
 .slider-group input[type=range] {
   width: 100%;
+  box-sizing: border-box;
   accent-color: var(--accent);
 }
 .scenario-cards {
@@ -1335,6 +1344,9 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .flowchart-container svg { max-width: 100%; height: auto; }
 .flowchart-placeholder {
@@ -1457,6 +1469,7 @@ body::before {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
   padding: 24px 28px;
+  box-sizing: border-box;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .sentiment-panel:hover { border-color: rgba(91,140,255,0.35); box-shadow: var(--glow-blue); transform: translateY(-2px); }
@@ -1468,6 +1481,7 @@ body::before {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
   padding: 24px 28px;
+  box-sizing: border-box;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .vc-panel:hover { border-color: rgba(91,140,255,0.35); box-shadow: var(--glow-blue); transform: translateY(-2px); }
@@ -1556,6 +1570,7 @@ body::before {
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--r-lg);
   padding: 24px 28px;
+  box-sizing: border-box;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 .improve-panel:hover { border-color: rgba(91,140,255,0.35); box-shadow: var(--glow-blue); transform: translateY(-2px); }
@@ -1993,6 +2008,7 @@ body::before {
    ══════════════════════════════════════════ */
 .report-page {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 #report-aurora-canvas {
@@ -2008,16 +2024,23 @@ body::before {
 .report-page-main {
   position: relative;
   z-index: 2;
-  width: min(1460px, calc(100vw - 28px));
+  width: 100%;
+  max-width: min(1460px, 100%);
+  min-width: 0;
   margin: 18px auto 50px;
+  padding-inline: 14px;
   padding-bottom: 260px;
+  box-sizing: border-box;
+  overflow-x: clip;
 }
 
 .report-nav {
-  position: relative;
-  width: min(1460px, calc(100vw - 28px));
+  position: sticky;
+  width: 100%;
+  max-width: min(1460px, 100%);
   margin: 14px auto 0;
-  top: auto;
+  padding-inline: 14px;
+  top: max(8px, env(safe-area-inset-top));
   left: auto;
   right: auto;
   transform: none;
@@ -2027,6 +2050,8 @@ body::before {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   box-shadow: 0 1px 0 rgba(91,140,255,0.08);
+  box-sizing: border-box;
+  z-index: 240;
 }
 
 .report-page .box-label {
@@ -2048,11 +2073,15 @@ body::before {
 .report-loading {
   display: none;
   min-height: 72vh;
+  width: 100%;
+  max-width: min(760px, 100%);
   padding: 46px 24px 20px;
+  margin: 0 auto;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   text-align: center;
+  box-sizing: border-box;
   border-radius: 24px;
   border: 1px solid rgba(91,140,255,0.2);
   background: rgba(10,10,15,0.7);
@@ -2153,27 +2182,32 @@ body::before {
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 14px;
   align-items: start;
+  max-width: 100%;
 }
 
 .report-content-main {
   min-width: 0;
+  max-width: 100%;
 }
 
 .history-sidebar {
   position: sticky;
-  top: 82px;
+  top: max(8px, env(safe-area-inset-top));
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.08);
   background: rgba(10,10,15,0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 14px;
-  height: calc(100vh - 96px);
+  height: calc(100vh - (max(8px, env(safe-area-inset-top)) + 16px));
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-sizing: border-box;
+  min-width: 0;
+  align-self: start;
 }
 
 .history-sidebar-sub {
@@ -2225,6 +2259,8 @@ body::before {
   color: var(--paper);
   font-size: 12px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .history-item-meta {
@@ -2254,6 +2290,7 @@ body::before {
   background: rgba(10,10,15,0.78);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  max-width: 100%;
 }
 
 .report-tabs a {
@@ -2287,6 +2324,7 @@ body::before {
     rgba(255,255,255,0.02);
   padding: 10px 24px 22px;
   margin-bottom: 14px;
+  box-sizing: border-box;
 }
 
 .report-hero-band .score-row {
@@ -2307,6 +2345,12 @@ body::before {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.8fr) minmax(0, 0.8fr);
   gap: 20px;
   align-items: start;
+  width: 100%;
+  max-width: 100%;
+}
+
+.report-bento-grid > * {
+  min-width: 0;
 }
 
 .bento-col {
@@ -2329,6 +2373,8 @@ body::before {
 .report-chat-section {
   margin-top: 32px;
   padding: 40px 36px;
+  max-width: 100%;
+  box-sizing: border-box;
   border-radius: var(--r-lg);
   border: 1px solid rgba(255,255,255,0.08);
   border-top: 2px solid rgba(91,140,255,0.35);
@@ -2339,6 +2385,18 @@ body::before {
 }
 .report-chat-section:hover { border-color: rgba(91,140,255,0.35); box-shadow: var(--glow-blue); }
 
+.report-page .report-hero-band,
+.report-page .radar-card,
+.report-page .vc-panel,
+.report-page .improve-panel,
+.report-page .sentiment-panel,
+.report-page .flowchart-panel,
+.report-page .rev-sim-panel,
+.report-page .report-chat-section {
+  max-width: 100%;
+  min-width: 0;
+}
+
 .report-chat-history {
   display: flex;
   flex-direction: column;
@@ -2348,6 +2406,8 @@ body::before {
 
 .report-chat-history .chat-bubble {
   animation: bubbleIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 @keyframes bubbleIn {
@@ -2389,7 +2449,7 @@ body::before {
   left: 0;
   right: 0;
   z-index: 200;
-  padding: 14px 24px 16px;
+  padding: 14px 24px calc(16px + env(safe-area-inset-bottom));
   background: rgba(10,10,15,0.88);
   border-top: 1px solid rgba(91,140,255,0.2);
   box-shadow: 0 -4px 30px rgba(91,140,255,0.1);
@@ -2454,7 +2514,7 @@ body::before {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
     border-radius: 12px;
-    overflow-x: hidden;
+    overflow: visible;
   }
 
   .nav-logo {
@@ -2597,15 +2657,33 @@ body::before {
     min-width: 220px;
   }
 
+  .report-actions,
+  .report-page-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .report-actions .reset-btn,
+  .report-page-actions .reset-btn {
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    text-align: center;
+    align-self: stretch;
+  }
+
   .report-page-main {
-    width: calc(100vw - 16px);
+    width: 100%;
+    max-width: 100%;
     margin-top: 12px;
+    padding-inline: 8px;
     padding-bottom: 220px;
   }
 
   .report-nav {
-    width: calc(100vw - 16px);
-    max-width: calc(100vw - 16px);
+    width: 100%;
+    max-width: 100%;
     padding-left: 14px;
     padding-right: 14px;
     border-radius: 14px;
@@ -2655,8 +2733,19 @@ body::before {
     margin-top: 20px;
   }
 
+  .info-box {
+    padding: 20px 18px;
+  }
+
+  .vc-panel,
+  .sentiment-panel,
+  .improve-panel,
+  .rev-sim-panel {
+    padding: 20px 18px;
+  }
+
   .report-chat-dock {
-    padding: 10px 12px 12px;
+    padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
   }
 
   .chat-dock-inner {
@@ -2700,6 +2789,25 @@ body::before {
   .report-layout { grid-template-columns: 1fr; }
   .report-sidebar { position: static; }
   .analyse-section .section-inner { max-width: 720px; }
+
+  .report-page-main,
+  .report-nav {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .report-page-main {
+    padding-inline: 10px;
+  }
+
+  .report-content-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .report-bento-grid {
+    gap: 16px;
+  }
 }
 
 @media (max-width: 960px) {
@@ -2714,6 +2822,39 @@ body::before {
     align-items: flex-start;
   }
   .hero-right { flex: unset; width: 100%; }
+  .hero-left {
+    width: 100%;
+    min-width: 0;
+  }
+  .hero-actions {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .hero-actions .btn-primary,
+  .hero-actions .btn-ghost {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    box-sizing: border-box;
+    padding: 12px 16px;
+    font-size: 10px;
+    letter-spacing: 0.11em;
+    min-height: 44px;
+  }
   .report-card { max-width: 480px; }
   .how-diagram { grid-template-columns: 1fr; gap: 24px; }
   .how-line { display: none; }
@@ -2736,6 +2877,66 @@ body::before {
 
   .powered-by {
     max-width: 100%;
+  }
+
+  .report-page-main {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 12px;
+    padding-inline: 8px;
+    padding-bottom: 210px;
+  }
+
+  .report-nav {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .report-content-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .history-sidebar {
+    position: static;
+    top: auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  .history-sidebar-list {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+  }
+
+  .history-item {
+    min-width: 210px;
+  }
+
+  .report-bento-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .bento-col-sidebar .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .report-tabs {
+    padding: 10px;
+  }
+
+  .flowchart-header {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .flowchart-container {
+    min-height: 320px;
   }
 }
 
@@ -2804,11 +3005,46 @@ body::before {
   .report-tabs a { font-size: 9px; padding: 6px 10px; }
   .report-nav .nav-wordmark { letter-spacing: 0.12em; font-size: 10px; }
   .report-chat-dock #chat-send { padding: 10px 12px; font-size: 12px; }
+  .report-page-main { padding-bottom: 200px; }
   .fc-modal-box { width: 96vw; height: 90vh; border-radius: 10px; }
   .sentiment-gauge-row { flex-direction: column; }
   .comp-detail-grid { grid-template-columns: 1fr; }
   .vc-subscores { grid-template-columns: 1fr; }
   .improve-head { flex-direction: column; align-items: flex-start; }
+  .vc-head { flex-direction: column; gap: 12px; }
+  .vc-score-wrap,
+  .vc-decision-wrap {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .info-box {
+    padding: 18px 16px;
+  }
+
+  .vc-panel,
+  .sentiment-panel,
+  .improve-panel,
+  .rev-sim-panel {
+    padding: 18px 16px;
+  }
+
+  .report-hero-band {
+    padding: 8px 14px 16px;
+  }
+
+  .flowchart-container {
+    padding: 14px;
+    min-height: 260px;
+  }
+
+  .scenario-card {
+    padding: 10px;
+  }
+
+  .scenario-val {
+    font-size: 16px;
+  }
 
   .hero-actions .btn-primary,
   .hero-actions .btn-ghost,
@@ -2865,7 +3101,7 @@ body::before {
     text-align: center;
   }
   .report-chat-dock {
-    padding: 10px 10px 12px;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
   }
   .chat-dock-inner {
     flex-direction: column;
@@ -2881,6 +3117,74 @@ body::before {
   }
   .report-chat-dock #chat-send {
     width: 100%;
+  }
+
+  .report-hero-band .score-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .report-hero-band .score-row > div {
+    min-width: 0;
+  }
+
+  .score-circle {
+    width: 64px;
+    height: 64px;
+  }
+
+  #score-num {
+    font-size: 1.6rem;
+  }
+
+  #report-title {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    overflow-wrap: anywhere;
+  }
+
+  .report-chat-section {
+    padding: 18px 14px 20px;
+  }
+
+  .slider-group input[type=range] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .info-box {
+    padding: 14px 12px;
+  }
+
+  .vc-panel,
+  .sentiment-panel,
+  .improve-panel,
+  .rev-sim-panel {
+    padding: 14px 12px;
+  }
+
+  .report-hero-band {
+    padding: 8px 10px 14px;
+  }
+
+  .flowchart-container {
+    padding: 10px;
+    min-height: 220px;
+  }
+
+  .report-page-main {
+    padding-inline: 6px;
+    padding-bottom: 190px;
+  }
+
+  .report-nav {
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 12px;
+  }
+
+  .history-item {
+    min-width: 190px;
   }
 
   .hero-actions {
@@ -2946,5 +3250,73 @@ body::before {
   .search-btn {
     font-size: 9px;
     letter-spacing: 0.1em;
+  }
+
+  .report-page-main {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 8px;
+    padding-inline: 4px;
+    padding-bottom: 180px;
+  }
+
+  .report-nav {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 10px;
+  }
+
+  .report-tabs {
+    padding: 7px;
+    gap: 5px;
+  }
+
+  .report-tabs a {
+    font-size: 8px;
+    padding: 6px 8px;
+  }
+
+  .history-item {
+    min-width: 150px;
+    padding: 9px 9px;
+  }
+
+  .report-hero-band {
+    padding: 6px 8px 12px;
+  }
+
+  .info-box {
+    padding: 12px 10px;
+  }
+
+  .vc-panel,
+  .sentiment-panel,
+  .improve-panel,
+  .rev-sim-panel {
+    padding: 12px 10px;
+  }
+
+  .report-chat-section {
+    padding: 14px 10px 16px;
+  }
+
+  .score-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  #score-num {
+    font-size: 1.4rem;
+  }
+
+  .flowchart-container {
+    padding: 8px;
+    min-height: 200px;
+  }
+
+  .scenario-val {
+    font-size: 14px;
   }
 }

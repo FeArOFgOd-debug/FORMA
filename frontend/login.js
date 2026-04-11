@@ -35,7 +35,14 @@
 
   function getNextUrl() {
     const params = new URLSearchParams(window.location.search);
-    return params.get('next') || 'index.html#analyse';
+    const raw = params.get('next') || 'index.html#analyse';
+    try {
+      const resolved = new URL(raw, window.location.origin);
+      if (resolved.origin !== window.location.origin) return 'index.html#analyse';
+      return resolved.pathname + resolved.search + resolved.hash;
+    } catch (_e) {
+      return 'index.html#analyse';
+    }
   }
 
   function loadClient() {

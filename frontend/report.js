@@ -1001,20 +1001,37 @@ function initFlowchartModal() {
   if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
 
   if (content) {
-    content.addEventListener('mousedown', (e) => {
+    content.style.touchAction = 'none';
+
+    function startDrag(clientX, clientY) {
       dragging = true;
-      startX = e.clientX - panX;
-      startY = e.clientY - panY;
+      startX = clientX - panX;
+      startY = clientY - panY;
       content.classList.add('fc-dragging');
-    });
-    content.addEventListener('mousemove', (e) => {
+    }
+
+    function moveDrag(clientX, clientY) {
       if (!dragging) return;
-      panX = e.clientX - startX;
-      panY = e.clientY - startY;
+      panX = clientX - startX;
+      panY = clientY - startY;
       applyTransform();
+    }
+
+    function stopDrag() {
+      dragging = false;
+      content.classList.remove('fc-dragging');
+    }
+
+    content.addEventListener('pointerdown', (e) => {
+      startDrag(e.clientX, e.clientY);
+      if (content.setPointerCapture) content.setPointerCapture(e.pointerId);
     });
-    content.addEventListener('mouseup', () => { dragging = false; content.classList.remove('fc-dragging'); });
-    content.addEventListener('mouseleave', () => { dragging = false; content.classList.remove('fc-dragging'); });
+    content.addEventListener('pointermove', (e) => {
+      moveDrag(e.clientX, e.clientY);
+    });
+    content.addEventListener('pointerup', stopDrag);
+    content.addEventListener('pointercancel', stopDrag);
+    content.addEventListener('pointerleave', stopDrag);
     content.addEventListener('wheel', (e) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -1032,8 +1049,24 @@ function initFlowchartModal() {
 }
 
 function scrollChatIntoView() {
-  const section = document.getElementById('report-chat-section');
-  if (section) section.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  const messages = document.getElementById('chat-messages');
+  if (!messages) return;
+
+  messages.scrollTop = messages.scrollHeight;
+
+  const lastBubble = messages.lastElementChild;
+  if (!lastBubble) return;
+
+  const chatDock = document.getElementById('chat-panel');
+  const dockHeight = (chatDock && window.getComputedStyle(chatDock).display !== 'none')
+    ? chatDock.getBoundingClientRect().height
+    : 0;
+  const visibleBottom = window.innerHeight - dockHeight - 8;
+  const lastRect = lastBubble.getBoundingClientRect();
+
+  if (lastRect.bottom > visibleBottom) {
+    window.scrollBy({ top: lastRect.bottom - visibleBottom, behavior: 'smooth' });
+  }
 }
 
 async function sendChat() {
@@ -1097,11 +1130,22 @@ async function sendChat() {
 async function exportPDF() {
   if (!(await ensureLoggedIn())) return;
   if (!_currentJobId) return;
-  const token = window.Auth ? await window.Auth.getAccessToken() : null;
-  const url = token
-    ? `${API_BASE}/export/${_currentJobId}/pdf?access_token=${encodeURIComponent(token)}`
-    : `${API_BASE}/export/${_currentJobId}/pdf`;
-  window.open(url, '_blank');
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/export/${_currentJobId}/pdf`, { headers });
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `forma_${_currentJobId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('PDF export error:', err);
+  }
 }
 
 function resetToHome() {
@@ -1235,12 +1279,25 @@ function setupChatEnterKey() {
 function setupReportTabs() {
   const links = Array.from(document.querySelectorAll('.report-tabs a[href^="#"]'));
   if (!links.length) return;
+
+  function getStickyNavOffset() {
+    const reportNav = document.querySelector('.report-nav');
+    if (!reportNav) return 12;
+    const navStyle = window.getComputedStyle(reportNav);
+    const sticky = navStyle.position === 'sticky' || navStyle.position === 'fixed';
+    if (!sticky) return 12;
+    const stickyTop = Number.parseFloat(navStyle.top || '0') || 0;
+    return Math.ceil(reportNav.getBoundingClientRect().height + stickyTop + 8);
+  }
+
   links.forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const id = link.getAttribute('href');
       const target = id ? document.querySelector(id) : null;
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!target) return;
+      const targetTop = window.scrollY + target.getBoundingClientRect().top - getStickyNavOffset();
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
     });
   });
 }
