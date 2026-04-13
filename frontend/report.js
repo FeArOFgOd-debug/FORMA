@@ -644,7 +644,7 @@ function compactIdeaLabel(idea) {
 
 function brutalLoadingHeadline(idea) {
   const label = compactIdeaLabel(idea);
-  return `Brutal check: does "${label}" survive real users?`;
+  return `Brutal check: does "${label}....." survive real users?`;
 }
 
 function brutalFinalHeadline(idea, analysis) {
