@@ -42,9 +42,16 @@ def query(name: str, args: dict[str, Any] | None = None) -> Any:
     return body.get("value")
 
 
-def create_job(idea: str) -> str:
+def create_job(idea: str, user_id: str) -> str:
     """Create a new pipeline job. Returns the Convex document ID."""
-    return mutation("jobs:createJob", {"idea": idea})
+    return mutation("jobs:createJob", {"idea": idea, "user_id": user_id})
+
+
+def upsert_user_profile(user_id: str, email: str, name: str | None = None) -> None:
+    mutation(
+        "jobs:upsertUserProfile",
+        {"user_id": user_id, "email": email, "name": name},
+    )
 
 
 def update_progress(job_id: str, progress: int, stage_label: str) -> None:
@@ -55,9 +62,10 @@ def update_progress(job_id: str, progress: int, stage_label: str) -> None:
     })
 
 
-def complete_job(job_id: str, result: dict[str, Any]) -> None:
+def complete_job(job_id: str, result: dict[str, Any], user_id: str) -> None:
     mutation("jobs:completeJob", {
         "job_id": job_id,
+        "user_id": user_id,
         "result": json.dumps(result),
     })
 
@@ -66,16 +74,16 @@ def fail_job(job_id: str, error: str) -> None:
     mutation("jobs:failJob", {"job_id": job_id, "error": error})
 
 
-def get_job(job_id: str) -> dict[str, Any] | None:
-    return query("jobs:getJob", {"job_id": job_id})
+def get_job(job_id: str, user_id: str) -> dict[str, Any] | None:
+    return query("jobs:getJob", {"job_id": job_id, "user_id": user_id})
 
 
-def list_analyses() -> list[dict[str, Any]]:
-    return query("jobs:listAnalyses") or []
+def list_analyses(user_id: str) -> list[dict[str, Any]]:
+    return query("jobs:listAnalyses", {"user_id": user_id}) or []
 
 
-def get_analysis(job_id: str) -> dict[str, Any] | None:
-    return query("jobs:getAnalysis", {"job_id": job_id})
+def get_analysis(job_id: str, user_id: str) -> dict[str, Any] | None:
+    return query("jobs:getAnalysis", {"job_id": job_id, "user_id": user_id})
 
 
 def get_scrape_cache(cache_key: str) -> Any:

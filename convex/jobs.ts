@@ -1,10 +1,43 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+export const upsertUserProfile = mutation({
+  args: {
+    user_id: v.string(),
+    email: v.string(),
+    name: v.optional(v.string()),
+  },
+  handler: async (ctx, { user_id, email, name }) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_user_id", (q) => q.eq("user_id", user_id))
+      .first();
+    const now = Date.now();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        email,
+        name,
+        last_seen_at: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("users", {
+      user_id,
+      email,
+      name,
+      created_at: now,
+      last_seen_at: now,
+    });
+  },
+});
+
 export const createJob = mutation({
-  args: { idea: v.string() },
-  handler: async (ctx, { idea }) => {
+  args: { idea: v.string(), user_id: v.string() },
+  handler: async (ctx, { idea, user_id }) => {
     const jobId = await ctx.db.insert("jobs", {
+      user_id,
       idea,
       status: "running",
       progress: 5,
@@ -29,11 +62,13 @@ export const updateProgress = mutation({
 export const completeJob = mutation({
   args: {
     job_id: v.id("jobs"),
+    user_id: v.string(),
     result: v.string(),
   },
-  handler: async (ctx, { job_id, result }) => {
+  handler: async (ctx, { job_id, user_id, result }) => {
     const job = await ctx.db.get(job_id);
     if (!job) throw new Error("Job not found");
+    if (job.user_id !== user_id) throw new Error("Unauthorized job access");
 
     await ctx.db.patch(job_id, {
       status: "completed",
@@ -42,6 +77,7 @@ export const completeJob = mutation({
     });
 
     await ctx.db.insert("analyses", {
+      user_id: job.user_id,
       idea: job.idea,
       job_id,
       result,
@@ -65,25 +101,31 @@ export const failJob = mutation({
 });
 
 export const getJob = query({
-  args: { job_id: v.id("jobs") },
-  handler: async (ctx, { job_id }) => {
-    return await ctx.db.get(job_id);
+  args: { job_id: v.id("jobs"), user_id: v.string() },
+  handler: async (ctx, { job_id, user_id }) => {
+    const job = await ctx.db.get(job_id);
+    if (!job || job.user_id !== user_id) return null;
+    return job;
   },
 });
 
 export const listAnalyses = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("analyses").order("desc").take(50);
+  args: { user_id: v.string() },
+  handler: async (ctx, { user_id }) => {
+    return await ctx.db
+      .query("analyses")
+      .withIndex("by_user_created", (q) => q.eq("user_id", user_id))
+      .order("desc")
+      .take(50);
   },
 });
 
 export const getAnalysis = query({
-  args: { job_id: v.id("jobs") },
-  handler: async (ctx, { job_id }) => {
+  args: { job_id: v.id("jobs"), user_id: v.string() },
+  handler: async (ctx, { job_id, user_id }) => {
     return await ctx.db
       .query("analyses")
-      .withIndex("by_job_id", (q) => q.eq("job_id", job_id))
+      .withIndex("by_user_job", (q) => q.eq("user_id", user_id).eq("job_id", job_id))
       .first();
   },
 });
